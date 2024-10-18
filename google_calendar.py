@@ -126,22 +126,33 @@ def get_event(event_id):
 
 
 def delete_event(event):
+  if DRY_RUN:
+    print(f"[dry-run] Skip delete {event}")
+    return None
   return get_service().events().delete(calendarId=calendar_id, eventId=event['id'], sendUpdates=SEND_UPDATES).execute()
 
 
 def create_event(event):
+  if DRY_RUN:
+    print(f"[dry-run] Skip creation {event}")
+    return None
   return get_service().events().insert(calendarId=calendar_id, body=event, sendUpdates=SEND_UPDATES).execute()
 
 
 def update_event(event):
+  if DRY_RUN:
+    print(f"[dry-run] Skip update {event}")
+    return None
   return get_service().events().update(calendarId=calendar_id, eventId=event['id'], body=event, sendUpdates=SEND_UPDATES).execute()
 
 
 def upsert_event(event):
     try:
       fe = get_event(event['id'])
+      print("Event exists. Update it")
       update_event(event)
     except Exception as ex:
+      print("Event does not exists. Create it")
       create_event(event)
 
 def delete_all(events):
@@ -248,15 +259,14 @@ def create_sprint_events(start_date, sprint_num, sprint_duration):
         duration=config_daily_duration,
         repeat=repeat,
         variant=w, # use the week progressive to generate the event.id 
-        attendees=recipients['team_members']
+        attendees=recipients['team_members'] + recipients['others']
       )
     )
 
   if DEBUG:
     print_events(events)
   
-  if not DRY_RUN:
-    upsert_all(events)
+  upsert_all(events)
 
 
 def print_events(events):
